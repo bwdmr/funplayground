@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>HTML5 Template + Tailwind CSS (CDN)</title>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="PhDr. Matej Lednár, PhD." />
+    <meta name="description" content="HTML5 Template + Tailwind CSS (CDN)" />
+    <meta name="keywords" content="tailwind, tailwindcss, cdn, template" />
+    <!-- <link rel="icon" type="image/x-icon" href="./images/favicon.ico" /> -->
+    <!-- jpg <link rel="icon" type="image/jpeg" href="./images/favicon.jpg" /> -->
+    <!-- png <link rel="icon" type="image/png" href="./images/favicon.png" /> -->
+    <link rel="stylesheet" href="./css/styles.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="./js/script.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.11.1/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style></style>
+  </head>
+
+  <body>
+
+    <div class="container mx-auto text-center p-6">
+      <h1 class="text-3xl font-bold underline text-center">Zürich Nightlife</h1>
+    </div>
+    <script type="text/javascript">
+
+      const main = () => {
+        try {
+          const elementList = document.getElementById("list")
+          Promise.all([
+            fetch('https://www.zuerich.com/en/api/v2/data?id=103').then(res => res.json()),
+            fetch('https://www.zuerich.com/en/api/v2/data?id=101').then(res => res.json()),
+            fetch('https://www.zuerich.com/en/api/v2/data?id=96').then(res => res.json()),
+            fetch('https://www.zuerich.com/en/api/v2/data?id=136').then(res => res.json()),
+            fetch('https://www.zuerich.com/en/api/v2/data?id=162').then(res => res.json())
+          ]).then((res) => { 
+            const data = res.flatMap(el => el).filter(el => el.address.addressLocality === "Zürich")
+
+            // list available elements
+            const containerheadElement = document.getElementById("head")
+            const containerlistOpenElement = document.getElementById("listOpen")
+            const containerlistClosedElement = document.getElementById("listClosed")
+
+            const templaterowElement = document.getElementById("templateRow")
+            const templateindicatorWrapper = document.getElementById("templateindicatorWrapper")
+            const templateindicatorContent = document.getElementById("templateindicatorContent")
+            const templateindicatorBadge = document.getElementById("templateindicatorBadge")
+
+            // fetch categories and deduplicate
+            const _categoryList = data.flatMap((row) => {
+              const categoryNameList = Object.keys(row.category)
+              return categoryNameList })
+            const categoryList = [...new Set(_categoryList)]
+
+            // render header items
+            categoryList.forEach((category) =>{
+              const headentryElementString = "<div class=\"border rounded-lg p-2 cursor-pointer\">" + category + "</div>"
+              containerheadElement.insertAdjacentHTML('beforeend', headentryElementString)
+            })
+
+
+            const weekdayNowRaw = Intl.DateTimeFormat('en-US', {weekday: "short"})
+              .format(new Date())
+            const weekdayNow = weekdayNowRaw.slice(0, -1)
+            let openLocation = []
+            let closedLocation = []
+            data.forEach((entry) => {
+              const row = templaterowElement
+              const indicator = templateindicatorWrapper
+
+              const indicatorContent = templateindicatorContent
+              indicatorContent.textContent = entry.name.de
+
+              const indicatorBadge = templateindicatorBadge
+              
+              const openhourList = entry.openingHours
+              let indicatorValue = false
+              if(openhourList !== undefined && openhourList.length > 0) {
+                const _openhourdayList = [...openhourList.join(" ")]
+                .filter(char => {
+                  const regex = /^[a-zA-Z]+$/
+                  if(regex.test(char)) { return char } 
+                })
+
+                const openhourdayList = _openhourdayList
+                  .map((el, index) => {
+                  if(index % 2 === 0) {
+                    const weekDay = el + _openhourdayList[index + 1]
+                    if(weekDay === weekdayNow) {
+                      indicatorValue = true }
+                 }})
+              }
+
+              if(indicatorValue === true) {
+                indicatorBadge.textContent = "open" }
+              else { indicatorBadge.textContent = "closed" }
+
+              const indicatorElement = indicator.appendChild(indicatorContent)
+              const rowElement = row.appendChild(indicatorElement).appendChild(indicatorBadge)
+              const rowElementString = row.outerHTML
+
+              if(indicatorValue === true) {
+                openLocation.push(rowElementString) }
+              else { closedLocation.push(rowElementString) }
+            })
+
+            openLocation.forEach(el => { containerlistOpenElement.insertAdjacentHTML('beforeend', el)})
+            closedLocation.forEach(el => { containerlistClosedElement.insertAdjacentHTML('beforeend', el)})
+          })
+        } catch { alert("internal server error") }
+      }
+
+      main()
+    </script>
+    <div id="wrapper">
+      <div id="head" class="flex gap-4 flex-wrap w-full justify-center"></div>
+      <div id="containerOpen" class="my-12 max-w-[50%] mx-auto">
+        <h4>Open</h4>
+        <div id="listOpen"></div>
+      </div>
+      <div id="containerClosed" class="my-12 max-w-[50%] mx-auto" >
+        <h4>Closed</h4>
+        <div id="listClosed"></div>
+      </div>
+    </div>
+    <div class="hidden">
+      <div id="templateRow" class="w-full flex justify-center"></div>
+      <div id="templateindicatorWrapper" class="indicator"></div>
+      <div id="templateindicatorContent" class="flex justify w-full bg-base-300 "></div>
+      <span id="templateindicatorBadge" class="indicator-item badge"></span> 
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
